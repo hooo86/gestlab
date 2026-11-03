@@ -16,6 +16,9 @@
     <string name="vpn_config_invalid">Configuration VPN invalide : %1$s</string>
     <string name="odoo_unreachable">Odoo est injoignable.\n%1$s</string>
     <string name="retry">Réessayer</string>
+    <string name="vpn_timeout">La connexion VPN n\'aboutit pas.\nLe journal ci-dessous indique la cause.</string>
+    <string name="copy_log">Copier le journal</string>
+    <string name="log_copied">Journal copié</string>
     <string name="change_credentials">Changer d\'identifiants</string>
 
     <string name="login_subtitle">Identifiants de connexion VPN fournis par votre administrateur</string>

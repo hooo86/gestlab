@@ -72,6 +72,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var statusRetry: MaterialButton
     private lateinit var statusLogin: MaterialButton
+    private lateinit var statusLogScroll: android.widget.ScrollView
+    private lateinit var statusLog: TextView
+    private lateinit var statusCopyLog: MaterialButton
+    private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val vpnTimeout = Runnable {
+        if (awaitingVpn && vpn.level != ConnectionStatus.LEVEL_CONNECTED) {
+            showPanel(getString(R.string.vpn_timeout), progress = false, retry = true)
+        }
+    }
     private lateinit var vpnState: TextView
     private lateinit var vpnToggle: TextView
     private lateinit var menuHint: TextView
@@ -130,7 +139,8 @@ class MainActivity : AppCompatActivity() {
         setupWebView()
         setupBack()
 
-        vpn.attach(::onVpnState)
+        vpn.attach(::onVpnState, ::onVpnLog)
+        requestNotificationPermission()
         connect()
     }
 
@@ -140,6 +150,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        timeoutHandler.removeCallbacks(vpnTimeout)
         vpn.detach()
         web.destroy()
         super.onDestroy()
@@ -171,6 +182,8 @@ class MainActivity : AppCompatActivity() {
         awaitingVpn = true
         sawVpnProgress = false
         showPanel(getString(R.string.vpn_connecting), progress = true, retry = false)
+        timeoutHandler.removeCallbacks(vpnTimeout)
+        timeoutHandler.postDelayed(vpnTimeout, VPN_TIMEOUT_MS)
 
         val consent = VpnService.prepare(this)
         if (consent != null) vpnPermissionLauncher.launch(consent) else vpn.start(profile)
@@ -185,6 +198,7 @@ class MainActivity : AppCompatActivity() {
         when (level) {
             ConnectionStatus.LEVEL_CONNECTED -> {
                 awaitingVpn = false
+                timeoutHandler.removeCallbacks(vpnTimeout)
                 toolbar.subtitle = null
                 hidePanel()
                 if (!odooLoaded) {
@@ -218,6 +232,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun onVpnLog(text: String) {
+        statusLog.text = text
+        if (statusPanel.visibility == View.VISIBLE && text.isNotEmpty()) {
+            statusLogScroll.visibility = View.VISIBLE
+            statusCopyLog.visibility = View.VISIBLE
+        }
+        statusLogScroll.post { statusLogScroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    /** Android 13+ : la notification du VPN (état, déconnexion) demande une autorisation. */
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+    }
+
     private fun showLogin(error: String?) {
         if (loginShown) return
         loginShown = true
@@ -232,6 +265,9 @@ class MainActivity : AppCompatActivity() {
         statusProgress.visibility = if (progress) View.VISIBLE else View.GONE
         statusRetry.visibility = if (retry) View.VISIBLE else View.GONE
         statusLogin.visibility = if (login || retry) View.VISIBLE else View.GONE
+        val showLog = statusLog.text.isNotEmpty() && (progress || retry)
+        statusLogScroll.visibility = if (showLog) View.VISIBLE else View.GONE
+        statusCopyLog.visibility = statusLogScroll.visibility
     }
 
     private fun hidePanel() {
@@ -250,6 +286,15 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.status_text)
         statusRetry = findViewById(R.id.status_retry)
         statusLogin = findViewById(R.id.status_login)
+        statusLogScroll = findViewById(R.id.status_log_scroll)
+        statusLog = findViewById(R.id.status_log)
+        statusCopyLog = findViewById(R.id.status_copy_log)
+        statusLog.text = vpn.logText()
+        statusCopyLog.setOnClickListener {
+            val cm = getSystemService(android.content.ClipboardManager::class.java)
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("Journal VPN", vpn.logText()))
+            Toast.makeText(this, R.string.log_copied, Toast.LENGTH_SHORT).show()
+        }
         vpnState = findViewById(R.id.drawer_vpn_state)
         vpnToggle = findViewById(R.id.drawer_vpn_toggle)
         menuHint = findViewById(R.id.drawer_menu_hint)
@@ -503,6 +548,8 @@ class MainActivity : AppCompatActivity() {
     """.trimIndent()
 
     private companion object {
+        const val VPN_TIMEOUT_MS = 45_000L
+
         /** Retient le nom de fichier proposé par Odoo (<a download="facture.pdf">). */
         val DOWNLOAD_HOOK_JS = """
             (function(){
