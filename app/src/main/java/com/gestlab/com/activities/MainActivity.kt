@@ -78,6 +78,10 @@ class MainActivity : AppCompatActivity() {
     private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val vpnTimeout = Runnable {
         if (awaitingVpn && vpn.level != ConnectionStatus.LEVEL_CONNECTED) {
+            statusLog.text = vpn.logText().ifEmpty {
+                "(aucun message du moteur VPN : le service ne s'est pas lancé)\n" +
+                    "État : ${vpn.level}"
+            }
             showPanel(getString(R.string.vpn_timeout), progress = false, retry = true)
         }
     }
@@ -200,6 +204,7 @@ class MainActivity : AppCompatActivity() {
         when (level) {
             ConnectionStatus.LEVEL_CONNECTED -> {
                 awaitingVpn = false
+                com.gestlab.com.GestlabApp.clearCrashReports(this)
                 timeoutHandler.removeCallbacks(vpnTimeout)
                 toolbar.subtitle = null
                 hidePanel()

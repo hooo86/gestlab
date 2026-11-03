@@ -68,7 +68,11 @@ class VpnController(context: Context) : VpnStatus.StateListener, VpnStatus.LogLi
     }
 
     /** Dernières lignes du journal OpenVPN (diagnostic affiché à l'écran). */
-    fun logText(): String = synchronized(logLines) { logLines.joinToString("\n") }
+    fun logText(): String {
+        val lines = synchronized(logLines) { logLines.joinToString("\n") }
+        val crashes = GestlabApp.crashReports(appContext)
+        return if (crashes.isEmpty()) lines else "$crashes\n\n$lines"
+    }
 
     private fun addLine(item: LogItem) {
         val text = try {
@@ -81,10 +85,8 @@ class VpnController(context: Context) : VpnStatus.StateListener, VpnStatus.LogLi
     }
 
     override fun newLog(logItem: LogItem) {
-        val text = synchronized(logLines) {
-            addLine(logItem)
-            logLines.joinToString("\n")
-        }
+        synchronized(logLines) { addLine(logItem) }
+        val text = logText()
         main.post { logListener?.invoke(text) }
     }
 
@@ -112,6 +114,7 @@ class VpnController(context: Context) : VpnStatus.StateListener, VpnStatus.LogLi
 
     /** À appeler une fois l'autorisation VPN Android accordée (VpnService.prepare). */
     fun start(profile: VpnProfile) {
+        VpnStatus.logInfo("Gestlab : démarrage du service VPN (${profile.mConnections.firstOrNull()?.mServerName ?: "?"})")
         // Enregistré chiffré dans le stockage privé de l'application.
         ProfileManager.setTemporaryProfile(appContext, profile)
         VPNLaunchHelper.startOpenVpn(profile, appContext, "gestlab", true)
