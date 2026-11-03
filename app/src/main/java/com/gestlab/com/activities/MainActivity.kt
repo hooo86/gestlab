@@ -95,6 +95,8 @@ class MainActivity : AppCompatActivity() {
     private var odooLoaded = false
     private var menusLoaded = false
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var connectedAt = 0L
+    private var autoRetried = false
 
     private val loginLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -201,9 +203,12 @@ class MainActivity : AppCompatActivity() {
                 timeoutHandler.removeCallbacks(vpnTimeout)
                 toolbar.subtitle = null
                 hidePanel()
+                connectedAt = android.os.SystemClock.elapsedRealtime()
+                autoRetried = false
                 if (!odooLoaded) {
                     odooLoaded = true
-                    web.loadUrl("$baseUrl/web")
+                    // Laisse Android basculer le réseau de l'application sur le tunnel.
+                    web.postDelayed({ web.loadUrl("$baseUrl/web") }, 1500)
                 }
             }
 
@@ -446,6 +451,14 @@ class MainActivity : AppCompatActivity() {
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) {
+                    // Juste après l'ouverture du tunnel, une connexion peut être coupée par le
+                    // changement de réseau : on réessaie une fois automatiquement.
+                    val sinceConnect = android.os.SystemClock.elapsedRealtime() - connectedAt
+                    if (!autoRetried && sinceConnect < 20_000) {
+                        autoRetried = true
+                        view.postDelayed({ view.reload() }, 2000)
+                        return
+                    }
                     showPanel(
                         getString(R.string.odoo_unreachable, error.description),
                         progress = false, retry = true
