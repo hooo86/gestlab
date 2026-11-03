@@ -3,12 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Requise par le moteur OpenVPN : sa tâche « keepVPNAlive » (relance du tunnel si
+         Android tue le processus) est persistante, ce qui exige cette permission. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Permissions de l'application OpenVPN complète, inutiles ici et refusées
          par Google Play sans justification : retirées. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
 
     <application
         android:name=".GestlabApp"
