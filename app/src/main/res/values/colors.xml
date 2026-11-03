@@ -6,4 +6,7 @@
     <color name="brand_container">#F2DCEB</color>
     <color name="on_brand_container">#2E1229</color>
     <color name="ic_launcher_background">#714B67</color>
+    <!-- Barre du haut et en-tête du menu -->
+    <color name="bar_bg">#714B67</color>
+    <color name="on_bar">#FFFFFF</color>
 </resources>
