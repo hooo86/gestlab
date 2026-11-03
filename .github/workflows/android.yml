@@ -84,7 +84,15 @@ jobs:
             STORE_PASS=$(trim "$KEYSTORE_PASSWORD")
             ALIAS=$(trim "$KEY_ALIAS")
             KEY_PASS=$(trim "$KEY_PASSWORD")
+            # Avec une clé PKCS12 les deux mots de passe sont identiques : un seul des deux secrets suffit.
+            [ -n "$STORE_PASS" ] || STORE_PASS="$KEY_PASS"
             [ -n "$KEY_PASS" ] || KEY_PASS="$STORE_PASS"
+            if [ -z "$STORE_PASS" ]; then
+              echo "::error::Mot de passe absent : créez le secret GESTLAB_KEYSTORE_PASSWORD (nom exact)."
+              exit 1
+            fi
+            [ -n "$KEYSTORE_PASSWORD" ] || echo "::notice::GESTLAB_KEYSTORE_PASSWORD absent : utilisation de GESTLAB_KEY_PASSWORD."
+            [ -n "$ALIAS" ] || ALIAS=gestlab
             JKS="$RUNNER_TEMP/gestlab.jks"
             if ! printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n\t' | base64 -d > "$JKS" 2>/dev/null; then
               echo "::error::GESTLAB_KEYSTORE_BASE64 n'est pas du base64 valide (refaire l'étape C avec gestlab.jks)."
