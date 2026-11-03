@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Mode sombre : couleur principale claire pour rester lisible sur fond sombre
+         (boutons, cases à cocher, liens). La barre du haut garde la couleur de la marque. -->
     <style name="Theme.Gestlab" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brand_dark</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimary">#E7B9DA</item>
+        <item name="colorOnPrimary">#3A1D33</item>
         <item name="colorPrimaryContainer">@color/brand</item>
         <item name="colorOnPrimaryContainer">#FFFFFF</item>
-        <item name="android:statusBarColor">#000000</item>
+        <item name="android:statusBarColor">@color/bar_bg</item>
     </style>
 </resources>

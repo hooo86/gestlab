@@ -5,12 +5,12 @@
         android:id="@+id/action_home"
         android:icon="@drawable/ic_home"
         android:title="@string/action_home"
-        app:iconTint="?attr/colorOnPrimary"
+        app:iconTint="@color/on_bar"
         app:showAsAction="always" />
     <item
         android:id="@+id/action_reload"
         android:icon="@drawable/ic_refresh"
         android:title="@string/action_reload"
-        app:iconTint="?attr/colorOnPrimary"
+        app:iconTint="@color/on_bar"
         app:showAsAction="always" />
 </menu>
