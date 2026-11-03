@@ -1,0 +1,9 @@
+<!-- Icône provisoire : un bouclier avec un « G ». Remplacez-la par votre logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M54,26L32,35.5v14.5c0,13.5 9.4,26.1 22,29.2 12.6,-3.1 22,-15.7 22,-29.2V35.5L54,26z"/>
+    <path android:fillColor="#714B67"
+        android:pathData="M63,47h-9v6h4.6c-0.7,2.6 -2.6,4 -4.6,4 -3,0 -5.5,-2.6 -5.5,-6s2.5,-6 5.5,-6c1.4,0 2.7,0.6 3.7,1.5l4.2,-4.2C60.1,40.6 57.2,39.5 54,39.5c-6.4,0 -11.5,5.1 -11.5,11.5S47.6,62.5 54,62.5c6.1,0 11,-4.6 11,-11.5 0,-1.4 -0.2,-2.7 -0.5,-4z"/>
+</vector>

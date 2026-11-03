@@ -1,0 +1,20 @@
+# EXEMPLE — votre vrai fichier doit s'appeler client.ovpn, à côté de celui-ci.
+# Il n'est jamais enregistré dans Git (voir .gitignore) : sur GitHub, il est fourni
+# par le secret OVPN_CONFIG_BASE64.
+client
+dev tun
+proto udp
+remote vpn.example.com 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+auth-user-pass
+cipher AES-256-GCM
+verb 3
+<ca>
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+</ca>

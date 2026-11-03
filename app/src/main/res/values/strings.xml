@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gestlab ERP</string>
+
+    <string name="vpn_connected">Connecté</string>
+    <string name="vpn_paused">VPN en pause</string>
+    <string name="vpn_connecting">Connexion sécurisée en cours…</string>
+    <string name="vpn_no_network">Pas de réseau, en attente…</string>
+    <string name="vpn_auth_failed">Identifiant ou mot de passe VPN incorrect.</string>
+    <string name="vpn_waiting">En attente…</string>
+    <string name="vpn_disconnected">VPN déconnecté</string>
+    <string name="vpn_state">VPN : %1$s</string>
+    <string name="vpn_login_required">Connectez-vous pour accéder à l\'ERP.</string>
+    <string name="vpn_permission_denied">Android doit autoriser la connexion VPN de l\'application pour accéder à l\'ERP.</string>
+    <string name="vpn_config_missing">Configuration VPN absente de l\'application (client.ovpn). Contactez votre administrateur.</string>
+    <string name="vpn_config_invalid">Configuration VPN invalide : %1$s</string>
+    <string name="odoo_unreachable">Odoo est injoignable.\n%1$s</string>
+    <string name="retry">Réessayer</string>
+    <string name="change_credentials">Changer d\'identifiants</string>
+
+    <string name="login_subtitle">Identifiants de connexion VPN fournis par votre administrateur</string>
+    <string name="login_user">Identifiant</string>
+    <string name="login_password">Mot de passe</string>
+    <string name="login_remember">Se souvenir de moi</string>
+    <string name="login_submit">Se connecter</string>
+    <string name="login_missing">Saisissez l\'identifiant et le mot de passe.</string>
+
+    <string name="menu_loading">Chargement du menu…</string>
+    <string name="menu_empty">Aucun menu disponible pour votre compte.</string>
+    <string name="menu_login_first">Connectez-vous à Odoo pour afficher votre menu.</string>
+    <string name="menu_error">Menu indisponible : %1$s</string>
+    <string name="menu_refresh">Actualiser le menu</string>
+    <string name="menu_odoo_logout">Se déconnecter d\'Odoo</string>
+    <string name="menu_vpn_disconnect">Déconnecter le VPN</string>
+    <string name="menu_vpn_connect">Connecter le VPN</string>
+    <string name="menu_forget">Oublier les identifiants VPN</string>
+    <string name="credentials_forgotten">Identifiants VPN effacés</string>
+
+    <string name="action_home">Accueil</string>
+    <string name="action_reload">Recharger</string>
+
+    <string name="download_started">Téléchargement…</string>
+    <string name="download_saved">Enregistré dans Téléchargements : %1$s</string>
+    <string name="download_failed">Échec du téléchargement : %1$s</string>
+</resources>

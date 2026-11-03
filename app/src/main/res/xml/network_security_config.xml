@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Odoo est en HTTP sur le port 8069 : autorisé UNIQUEMENT pour ce domaine,
+     dont le trafic passe chiffré dans le tunnel VPN. Le reste reste HTTPS obligatoire. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">odoo.lnhc-dz.com</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,9 @@
+.gradle/
+build/
+local.properties
+vendor/
+# Secrets : jamais dans Git
+keystore.properties
+*.jks
+*.keystore
+app/src/main/assets/client.ovpn

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs de la marque : à adapter à votre charte. -->
+    <color name="brand">#714B67</color>
+    <color name="brand_dark">#4E3447</color>
+    <color name="brand_container">#F2DCEB</color>
+    <color name="on_brand_container">#2E1229</color>
+    <color name="ic_launcher_background">#714B67</color>
+</resources>
