@@ -50,9 +50,23 @@ jobs:
           OVPN_CONFIG_BASE64: ${{ secrets.OVPN_CONFIG_BASE64 }}
         run: |
           if [ -n "$OVPN_CONFIG_BASE64" ]; then
-            echo "$OVPN_CONFIG_BASE64" | base64 -d > app/src/main/assets/client.ovpn
-            grep -q "auth-user-pass" app/src/main/assets/client.ovpn \
-              || echo "::warning::client.ovpn ne contient pas auth-user-pass."
+            OUT=app/src/main/assets/client.ovpn
+            printf '%s\n' "$OVPN_CONFIG_BASE64" > "$RUNNER_TEMP/ovpn.in"
+            # Le secret peut contenir le fichier .ovpn tel quel (copié-collé) ou encodé en base64.
+            if grep -qE '^[[:space:]]*(client|remote|dev|proto|<ca>)([[:space:]]|$)' "$RUNNER_TEMP/ovpn.in"; then
+              tr -d '\r' < "$RUNNER_TEMP/ovpn.in" > "$OUT"
+            elif tr -d ' \r\n\t' < "$RUNNER_TEMP/ovpn.in" | base64 -d > "$RUNNER_TEMP/ovpn.dec" 2>/dev/null; then
+              tr -d '\r' < "$RUNNER_TEMP/ovpn.dec" > "$OUT"
+            else
+              echo "::error::Le secret OVPN_CONFIG_BASE64 n'est ni un fichier .ovpn ni du base64 valide."
+              exit 1
+            fi
+            rm -f "$RUNNER_TEMP/ovpn.dec"
+            rm -f "$RUNNER_TEMP/ovpn.in"
+            grep -qE '^[[:space:]]*remote[[:space:]]' "$OUT" \
+              || { echo "::error::Configuration VPN invalide : aucune ligne « remote »."; exit 1; }
+            grep -q "auth-user-pass" "$OUT" \
+              || echo "::warning::La configuration VPN ne contient pas auth-user-pass."
           else
             echo "::warning::Secret OVPN_CONFIG_BASE64 absent : l'application n'aura pas de configuration VPN."
           fi
