@@ -79,9 +79,39 @@ jobs:
           KEY_PASSWORD: ${{ secrets.GESTLAB_KEY_PASSWORD }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/gestlab.jks"
-            printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
-              "$RUNNER_TEMP/gestlab.jks" "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+            # Retire les retours à la ligne / espaces parasites d'un copier-coller.
+            trim() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+            STORE_PASS=$(trim "$KEYSTORE_PASSWORD")
+            ALIAS=$(trim "$KEY_ALIAS")
+            KEY_PASS=$(trim "$KEY_PASSWORD")
+            [ -n "$KEY_PASS" ] || KEY_PASS="$STORE_PASS"
+            JKS="$RUNNER_TEMP/gestlab.jks"
+            if ! printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n\t' | base64 -d > "$JKS" 2>/dev/null; then
+              echo "::error::GESTLAB_KEYSTORE_BASE64 n'est pas du base64 valide (refaire l'étape C avec gestlab.jks)."
+              exit 1
+            fi
+            # Vérifications avant la compilation, avec un message clair.
+            if ! keytool -list -keystore "$JKS" -storepass "$STORE_PASS" > /dev/null 2>&1; then
+              echo "::error::GESTLAB_KEYSTORE_PASSWORD incorrect (ou GESTLAB_KEYSTORE_BASE64 ne vient pas du bon fichier gestlab.jks)."
+              exit 1
+            fi
+            if ! keytool -list -keystore "$JKS" -storepass "$STORE_PASS" -alias "$ALIAS" > /dev/null 2>&1; then
+              echo "::error::Alias introuvable dans la clé : GESTLAB_KEY_ALIAS doit être celui donné à keytool (-alias gestlab)."
+              keytool -list -keystore "$JKS" -storepass "$STORE_PASS" | grep -i "PrivateKeyEntry" | sed 's/,.*//' | sed 's/^/Alias présent : /'
+              exit 1
+            fi
+            # Clé au format PKCS12 (format par défaut de keytool) : le mot de passe de la clé
+            # est toujours celui du keystore, quel que soit GESTLAB_KEY_PASSWORD.
+            if keytool -list -keystore "$JKS" -storepass "$STORE_PASS" 2>/dev/null | grep -qi "PKCS12"; then
+              KEY_PASS="$STORE_PASS"
+            fi
+            {
+              echo "GESTLAB_STORE_FILE=$JKS"
+              echo "GESTLAB_STORE_PASSWORD=$STORE_PASS"
+              echo "GESTLAB_KEY_ALIAS=$ALIAS"
+              echo "GESTLAB_KEY_PASSWORD=$KEY_PASS"
+            } >> "$GITHUB_ENV"
+            echo "Clé de signature vérifiée."
           else
             echo "::warning::Pas de clé de signature : APK signé avec la clé de debug (non publiable sur Google Play)."
           fi
