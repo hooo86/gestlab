@@ -17,6 +17,16 @@
    * odoo-mobile.js autorise seulement ses blocs à passer à la ligne (classe gl-wrap)
    * au lieu de sortir de l'écran.
    */
+  /* Odoo masque/réaffiche la barre en glissant pendant le défilement (« sticky ») ;
+     avec une barre sur plusieurs lignes, cela fait sauter l'écran. Elle défile donc
+     simplement avec la page. */
+  .o_control_panel,
+  .o_control_panel.o_mobile_sticky {
+    position: relative !important;
+    top: auto !important;
+    transform: none !important;
+    transition: none !important;
+  }
   .o_control_panel.gl-wrap,
   .o_control_panel .gl-wrap { flex-wrap: wrap !important; row-gap: 6px; }
   .o_control_panel.gl-wrap > *,
