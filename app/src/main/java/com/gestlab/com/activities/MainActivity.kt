@@ -288,6 +288,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindViews() {
         drawer = findViewById(R.id.drawer)
+        // Barre d'état aux couleurs de la marque, icônes claires.
+        drawer.setStatusBarBackgroundColor(getColor(R.color.bar_bg))
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = false
         toolbar = findViewById(R.id.toolbar)
         web = findViewById(R.id.web)
         pageProgress = findViewById(R.id.page_progress)
@@ -417,6 +421,8 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             loadWithOverviewMode = true
+            // Taille du texte fixe : la « grande police » du téléphone faisait déborder Odoo.
+            textZoom = 100
             useWideViewPort = true
             builtInZoomControls = true
             displayZoomControls = false
@@ -436,6 +442,10 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
 
+            override fun onPageCommitVisible(view: WebView, url: String) {
+                view.evaluateJavascript(ODOO_STYLE_JS, null)
+            }
+
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 pageProgress.visibility = View.VISIBLE
             }
@@ -443,6 +453,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 pageProgress.visibility = View.GONE
                 view.evaluateJavascript(DOWNLOAD_HOOK_JS, null)
+                view.evaluateJavascript(ODOO_STYLE_JS, null)
                 val path = Uri.parse(url).path.orEmpty()
                 if (path.startsWith("/web/login") || path.startsWith("/web/database")) {
                     menusLoaded = false
@@ -566,6 +577,26 @@ class MainActivity : AppCompatActivity() {
     """.trimIndent()
 
     private companion object {
+        /**
+         * Masque la barre de menu d'Odoo (le menu natif ☰ de l'application la remplace)
+         * et resserre l'affichage sur téléphone. Compatible Odoo 13 à 18.
+         */
+        val ODOO_STYLE_JS = """
+            (function(){
+              if (document.getElementById('gestlab-style')) return;
+              var css = [
+                '.o_main_navbar, header.o_navbar { display: none !important; }',
+                '.o_web_client { padding-top: 0 !important; }',
+                '.o_control_panel { flex-wrap: wrap; }',
+                '.o_list_renderer, .o_list_view { overflow-x: auto; }'
+              ].join('\n');
+              var s = document.createElement('style');
+              s.id = 'gestlab-style';
+              s.textContent = css;
+              (document.head || document.documentElement).appendChild(s);
+            })();
+        """.trimIndent()
+
         const val VPN_TIMEOUT_MS = 45_000L
 
         /** Retient le nom de fichier proposé par Odoo (<a download="facture.pdf">). */

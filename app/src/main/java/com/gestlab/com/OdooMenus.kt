@@ -29,20 +29,38 @@ class OdooSessionExpired : IOException("Session Odoo expirée")
 object OdooMenus {
 
     suspend fun load(baseUrl: String, cookie: String?): List<OdooMenu> = withContext(Dispatchers.IO) {
+        // Contexte de l'utilisateur (langue du compte, fuseau…) : sans lui, certaines
+        // versions d'Odoo renvoient les menus en anglais.
+        val userContext = try {
+            rpc(baseUrl, cookie, "/web/session/get_session_info", JSONObject())
+                .let { it as? JSONObject }?.optJSONObject("user_context")
+        } catch (e: OdooSessionExpired) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        val kwargs = JSONObject()
+        if (userContext != null) kwargs.put("context", userContext)
+        val result = rpc(
+            baseUrl, cookie, "/web/dataset/call_kw/ir.ui.menu/load_menus",
+            JSONObject()
+                .put("model", "ir.ui.menu")
+                .put("method", "load_menus")
+                .put("args", JSONArray().put(false))
+                .put("kwargs", kwargs)
+        )
+        parse(result as JSONObject)
+    }
+
+    /** Appel JSON-RPC à Odoo avec le cookie de session de la WebView ; renvoie « result ». */
+    private fun rpc(baseUrl: String, cookie: String?, path: String, params: JSONObject): Any? {
         val payload = JSONObject()
             .put("jsonrpc", "2.0")
             .put("method", "call")
             .put("id", 1)
-            .put(
-                "params", JSONObject()
-                    .put("model", "ir.ui.menu")
-                    .put("method", "load_menus")
-                    .put("args", JSONArray().put(false))
-                    .put("kwargs", JSONObject())
-            )
+            .put("params", params)
 
-        val conn = URL("$baseUrl/web/dataset/call_kw/ir.ui.menu/load_menus")
-            .openConnection() as HttpURLConnection
+        val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
             conn.connectTimeout = 15_000
@@ -63,7 +81,7 @@ object OdooMenus {
                 if (name.contains("SessionExpired") || err.optInt("code") == 100) throw OdooSessionExpired()
                 throw IOException(err.optJSONObject("data")?.optString("message") ?: err.optString("message"))
             }
-            parse(json.getJSONObject("result"))
+            return json.opt("result")
         } finally {
             conn.disconnect()
         }
