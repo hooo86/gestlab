@@ -106,6 +106,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawerUser: TextView
     private lateinit var mobileToggle: TextView
     private var connectedAt = 0L
+    private var localMode = false
+    private var checkingLocal = false
+    private var resumeUrl: String? = null
     private var autoRetried = false
 
     private val loginLauncher =
@@ -176,7 +179,43 @@ class MainActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ VPN
 
+    /**
+     * Point d'entrée : si Odoo répond directement (Wi-Fi de l'entreprise), on l'ouvre sans
+     * VPN ; sinon on établit le tunnel.
+     */
     private fun connect() {
+        if (vpn.level == ConnectionStatus.LEVEL_CONNECTED) {
+            onVpnState(ConnectionStatus.LEVEL_CONNECTED, "")
+            return
+        }
+        checkingLocal = true
+        showPanel(getString(R.string.local_checking), progress = true, retry = false)
+        lifecycleScope.launch {
+            val local = OdooMenus.isReachable(baseUrl)
+            checkingLocal = false
+            if (local) enterLocalMode() else connectVpn()
+        }
+    }
+
+    private fun enterLocalMode() {
+        localMode = true
+        awaitingVpn = false
+        timeoutHandler.removeCallbacks(vpnTimeout)
+        hidePanel()
+        toolbar.subtitle = getString(R.string.local_network)
+        vpnState.setText(R.string.vpn_state_local)
+        vpnToggle.setText(R.string.menu_vpn_connect)
+        connectedAt = android.os.SystemClock.elapsedRealtime()
+        autoRetried = true
+        if (!odooLoaded) {
+            odooLoaded = true
+            web.loadUrl(resumeUrl ?: "$baseUrl/web")
+            resumeUrl = null
+        }
+    }
+
+    private fun connectVpn() {
+        localMode = false
         if (!vpn.hasConfig()) {
             showPanel(getString(R.string.vpn_config_missing), progress = false, retry = false)
             return
@@ -210,6 +249,9 @@ class MainActivity : AppCompatActivity() {
     private fun onVpnState(level: ConnectionStatus, detail: String) {
         val label = VpnController.label(this, level)
         val connected = level == ConnectionStatus.LEVEL_CONNECTED
+        // En réseau local, l'état du VPN (non utilisé) ne doit pas masquer Odoo.
+        if ((localMode || checkingLocal) && !connected) return
+        if (connected) localMode = false
         vpnState.text = getString(R.string.vpn_state, label)
         vpnToggle.setText(if (connected || awaitingVpn) R.string.menu_vpn_disconnect else R.string.menu_vpn_connect)
 
@@ -224,8 +266,10 @@ class MainActivity : AppCompatActivity() {
                 autoRetried = false
                 if (!odooLoaded) {
                     odooLoaded = true
+                    val url = resumeUrl ?: "$baseUrl/web"
+                    resumeUrl = null
                     // Laisse Android basculer le réseau de l'application sur le tunnel.
-                    web.postDelayed({ web.loadUrl("$baseUrl/web") }, 1500)
+                    web.postDelayed({ web.loadUrl(url) }, 1500)
                 }
             }
 
@@ -401,7 +445,10 @@ class MainActivity : AppCompatActivity() {
             if (vpn.level == ConnectionStatus.LEVEL_CONNECTED || awaitingVpn) {
                 awaitingVpn = false
                 vpn.stop()
-            } else connect()
+            } else {
+                toolbar.subtitle = null
+                connectVpn()      // demandé explicitement : même en réseau local
+            }
         }
         findViewById<View>(R.id.drawer_forget).setOnClickListener {
             drawer.closeDrawers()
@@ -599,6 +646,15 @@ class MainActivity : AppCompatActivity() {
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) {
+                    // Réseau local perdu (sortie du bureau) : on passe automatiquement par le VPN.
+                    if (localMode) {
+                        localMode = false
+                        odooLoaded = false
+                        resumeUrl = request.url.toString()
+                        toolbar.subtitle = null
+                        connectVpn()
+                        return
+                    }
                     // Juste après l'ouverture du tunnel, une connexion peut être coupée par le
                     // changement de réseau : on réessaie une fois automatiquement.
                     val sinceConnect = android.os.SystemClock.elapsedRealtime() - connectedAt

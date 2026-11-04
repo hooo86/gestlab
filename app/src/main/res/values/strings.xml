@@ -10,6 +10,9 @@
     <string name="vpn_waiting">En attente…</string>
     <string name="vpn_disconnected">VPN déconnecté</string>
     <string name="vpn_state">VPN : %1$s</string>
+    <string name="vpn_state_local">Réseau local : VPN non utilisé</string>
+    <string name="local_checking">Recherche du réseau de l\'entreprise…</string>
+    <string name="local_network">Réseau local</string>
     <string name="vpn_login_required">Connectez-vous pour accéder à l\'ERP.</string>
     <string name="vpn_permission_denied">Android doit autoriser la connexion VPN de l\'application pour accéder à l\'ERP.</string>
     <string name="vpn_config_missing">Configuration VPN absente de l\'application (client.ovpn). Contactez votre administrateur.</string>

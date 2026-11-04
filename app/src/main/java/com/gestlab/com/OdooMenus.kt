@@ -96,6 +96,33 @@ object OdooMenus {
             )
         }
 
+    /**
+     * Odoo répond-il directement, sans VPN (réseau local de l'entreprise) ?
+     * Vérifie une vraie réponse d'Odoo (version du serveur), pas seulement une connexion.
+     */
+    suspend fun isReachable(baseUrl: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$baseUrl/web/webclient/version_info").openConnection() as HttpURLConnection
+            try {
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 3_000
+                conn.readTimeout = 4_000
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.outputStream.use {
+                    it.write("""{"jsonrpc":"2.0","method":"call","params":{}}""".toByteArray())
+                }
+                if (conn.responseCode != 200) return@withContext false
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
+                JSONObject(text).optJSONObject("result")?.has("server_version") == true
+            } finally {
+                conn.disconnect()
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /** Appel JSON-RPC à Odoo avec le cookie de session de la WebView ; renvoie « result ». */
     private fun rpc(baseUrl: String, cookie: String?, path: String, params: JSONObject): Any? {
         val payload = JSONObject()

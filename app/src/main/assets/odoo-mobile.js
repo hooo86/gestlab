@@ -33,6 +33,19 @@
     var heads = table.querySelectorAll(':scope > thead > tr > th');
     var labels = [];
     for (var i = 0; i < heads.length; i++) labels.push(text(heads[i]));
+    // En-têtes de groupe : libellé de la colonne sur chaque total (en tenant compte des colspan).
+    var groups = table.querySelectorAll(':scope > tbody > tr.o_group_header');
+    for (var g = 0; g < groups.length; g++) {
+      var col = 0, gc = groups[g].children;
+      for (var k = 0; k < gc.length; k++) {
+        var cell = gc[k];
+        if (!cell.classList.contains('o_group_name') && cell.tagName === 'TD') {
+          if (labels[col]) cell.setAttribute('data-gl-label', labels[col]);
+          cell.classList.toggle('gl-empty', !text(cell) && !cell.querySelector('.o_group_pager, button'));
+        }
+        col += cell.colSpan || 1;
+      }
+    }
     var rows = table.querySelectorAll(':scope > tbody > tr.o_data_row');
     for (var r = 0; r < rows.length; r++) {
       var cells = rows[r].children, titleDone = false;
@@ -52,55 +65,17 @@
   }
 
   /*
-   * Barre de commandes : chaque élément est repéré par son rôle (et non par sa place
-   * dans la page), puis replacé dans une grille CSS. Les conteneurs intermédiaires
-   * passent en « display: contents » pour ne plus influencer la mise en page.
+   * Barre de commandes : on garde la mise en page d'Odoo et on autorise seulement
+   * ses conteneurs « flex » à passer à la ligne au lieu de déborder de l'écran.
    */
-  var CP_ROLES = [
-    ['gl-cp-crumb',   '.breadcrumb, .o_breadcrumb'],
-    ['gl-cp-actions', '.o_cp_action_menus'],
-    ['gl-cp-buttons', '.o_cp_buttons, .o_control_panel_main_buttons'],
-    ['gl-cp-views',   '.o_cp_switch_buttons'],
-    ['gl-cp-toggle',  '.o_enable_searchview, .o_toggle_searchview_full'],
-    ['gl-cp-search',  '.o_cp_searchview, .o_searchview, .o_search_options'],
-    ['gl-cp-pager',   '.o_cp_pager, .o_pager']
-  ];
-  var CP_ITEM_CLASSES = CP_ROLES.map(function (r) { return r[0]; });
-
-  function isItem(el) {
-    for (var i = 0; i < CP_ITEM_CLASSES.length; i++) if (el.classList.contains(CP_ITEM_CLASSES[i])) return true;
-    return false;
-  }
-
   function processControlPanel(cp) {
-    if (cp.closest('.modal')) return;
-    // Réinitialisation (Odoo re-dessine souvent la barre).
-    cp.querySelectorAll('.gl-cp-wrap, .gl-cp-item, .gl-cp-other').forEach(function (el) {
-      el.classList.remove('gl-cp-wrap', 'gl-cp-item', 'gl-cp-other');
-      CP_ITEM_CLASSES.forEach(function (c) { el.classList.remove(c); });
-    });
-    var found = 0;
-    CP_ROLES.forEach(function (role) {
-      var nodes = cp.querySelectorAll(role[1]);
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i];
-        if (el.parentElement && el.parentElement.closest('.gl-cp-item')) continue;   // déjà dans un élément repéré
-        if (isItem(el)) continue;
-        el.classList.add('gl-cp-item', role[0]);
-        found++;
-        for (var p = el.parentElement; p && p !== cp; p = p.parentElement) p.classList.add('gl-cp-wrap');
-      }
-    });
-    if (!found) { cp.classList.remove('gl-cp'); return; }
-    // Tout autre élément visible devient une ligne pleine largeur.
-    var wraps = [cp].concat(Array.prototype.slice.call(cp.querySelectorAll('.gl-cp-wrap')));
-    wraps.forEach(function (w) {
-      for (var i = 0; i < w.children.length; i++) {
-        var c = w.children[i];
-        if (!c.classList.contains('gl-cp-wrap') && !c.classList.contains('gl-cp-item')) c.classList.add('gl-cp-other');
-      }
-    });
-    cp.classList.add('gl-cp');
+    var all = [cp].concat(Array.prototype.slice.call(cp.querySelectorAll('*')));
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (el.closest('.dropdown-menu, .o_searchview_facet, .o_searchview_input_container')) continue;
+      var d = getComputedStyle(el).display;
+      if (d === 'flex' || d === 'inline-flex') el.classList.add('gl-wrap');
+    }
   }
 
   var pending = false;

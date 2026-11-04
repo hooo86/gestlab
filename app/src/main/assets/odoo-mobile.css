@@ -12,33 +12,15 @@
   .o_web_client .dropdown-menu { max-width: 100vw; }
 
 
-  /* ---------- Barre de commandes : grille recomposée par odoo-mobile.js ----------
-   *  ligne 1 : titre (fil d'Ariane)                    ⚙ actions
-   *  ligne 2 : Nouveau / Importer…        vues ▾       🔍
-   *  ligne 3 : recherche (si ouverte), pagination à droite
+  /* ---------- Barre de commandes ----------
+   * Mise en page d'Odoo conservée (y compris son mode recherche mobile) ;
+   * odoo-mobile.js autorise seulement ses blocs à passer à la ligne (classe gl-wrap)
+   * au lieu de sortir de l'écran.
    */
-  .o_control_panel.gl-cp {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    gap: 6px 8px;
-    padding: 8px 10px !important;
-    min-height: 0 !important;
-  }
-  .o_control_panel.gl-cp .gl-cp-wrap { display: contents !important; }
-  .o_control_panel.gl-cp .gl-cp-item { margin: 0 !important; min-width: 0; max-width: 100%; position: relative; float: none !important; transform: none !important; left: auto !important; }
-  .o_control_panel.gl-cp .gl-cp-crumb   { order: 1; grid-column: 1 / 3; overflow: hidden; }
-  .o_control_panel.gl-cp .gl-cp-crumb .breadcrumb,
-  .o_control_panel.gl-cp .breadcrumb.gl-cp-crumb { margin: 0; padding: 0; background: none; font-size: 18px; white-space: normal; flex-wrap: wrap; }
-  .o_control_panel.gl-cp .gl-cp-actions { order: 2; grid-column: 3; justify-self: end; }
-  .o_control_panel.gl-cp .gl-cp-buttons { order: 3; grid-column: 1; display: flex !important; flex-wrap: wrap; gap: 6px; justify-self: start; }
-  .o_control_panel.gl-cp .gl-cp-buttons .btn { margin: 0 !important; }
-  .o_control_panel.gl-cp .gl-cp-views   { order: 4; grid-column: 2; justify-self: end; }
-  .o_control_panel.gl-cp .gl-cp-toggle  { order: 5; grid-column: 3; justify-self: end; }
-  .o_control_panel.gl-cp .gl-cp-search  { order: 6; grid-column: 1 / -1; width: 100% !important; }
-  .o_control_panel.gl-cp .gl-cp-pager   { order: 7; grid-column: 1 / -1; justify-self: end; }
-  .o_control_panel.gl-cp .gl-cp-other   { order: 8; grid-column: 1 / -1; }
-  .o_control_panel.gl-cp .gl-cp-other:empty { display: none !important; }
+  .o_control_panel.gl-wrap,
+  .o_control_panel .gl-wrap { flex-wrap: wrap !important; row-gap: 6px; }
+  .o_control_panel.gl-wrap > *,
+  .o_control_panel .gl-wrap > * { min-width: 0; max-width: 100%; }
 
   /* ---------- Listes principales : une carte par ligne ---------- */
   table.gl-cards { display: block !important; width: 100% !important; border: 0 !important; background: transparent !important; table-layout: auto !important; }
@@ -93,22 +75,46 @@
   table.gl-cards tr.o_data_row > td.o_handle_cell { display: none !important; }
   /* Lignes vides de remplissage */
   table.gl-cards tbody tr:not(.o_data_row):not(.o_group_header):not(.o_add_record_row) { display: none !important; }
-  /* En-têtes de groupe */
+  /* En-têtes de groupe : nom sur la 1re ligne, puis un total par ligne avec son libellé */
   table.gl-cards tr.o_group_header {
-    display: flex !important;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: block !important;
     margin: 12px 10px 4px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(0,0,0,.05);
-    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #eef0f3 !important;
+    border: 0 !important;
+    cursor: pointer;
   }
-  table.gl-cards tr.o_group_header > td,
-  table.gl-cards tr.o_group_header > th { display: block !important; border: 0 !important; padding: 0 4px !important; width: auto !important; }
-  table.gl-cards tr.o_group_header > th.o_group_name,
-  table.gl-cards tr.o_group_header > td.o_group_name { flex: 1 1 100%; white-space: normal !important; text-align: left; }
-  table.gl-cards tr.o_group_header > td:empty { display: none !important; }
+  table.gl-cards tr.o_group_header > th,
+  table.gl-cards tr.o_group_header > td {
+    display: flex !important;
+    justify-content: space-between;
+    gap: 12px;
+    width: auto !important;
+    max-width: none !important;
+    padding: 2px 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    white-space: normal !important;
+    text-align: right;
+  }
+  table.gl-cards tr.o_group_header > .o_group_name {
+    display: block !important;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 600;
+    padding-bottom: 4px !important;
+  }
+  table.gl-cards tr.o_group_header > td[data-gl-label]::before {
+    content: attr(data-gl-label);
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: #6c757d;
+  }
+  table.gl-cards tr.o_group_header > td.gl-empty { display: none !important; }
+  table.gl-cards tr.o_group_header .o_group_pager { display: flex; justify-content: flex-end; }
+
   /* Totaux */
   table.gl-cards > tfoot tr { display: flex !important; flex-wrap: wrap; justify-content: flex-end; gap: 12px; padding: 8px 14px; font-weight: 600; }
   table.gl-cards > tfoot td { display: block !important; border: 0 !important; padding: 0 !important; }
