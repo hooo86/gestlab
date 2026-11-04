@@ -65,6 +65,12 @@ jobs:
             rm -f "$RUNNER_TEMP/ovpn.in"
             grep -qE '^[[:space:]]*remote[[:space:]]' "$OUT" \
               || { echo "::error::Configuration VPN invalide : aucune ligne « remote »."; exit 1; }
+            # Les certificats/clés doivent être inclus dans le fichier (<ca>…</ca>, <tls-auth>…</tls-auth>) :
+            # l'application ne reçoit que le .ovpn, pas les fichiers à côté.
+            if EXT=$(grep -nE '^[[:space:]]*(ca|cert|key|tls-auth|tls-crypt|tls-crypt-v2|pkcs12|secret)[[:space:]]+[^[:space:]]' "$OUT"); then
+              echo "::error::Le fichier .ovpn fait référence à des fichiers externes (ligne(s) : $(echo "$EXT" | cut -d: -f1 | tr '\n' ' ')). Utilisez l'export pfSense « inline » (…-connect-config.ovpn), où les clés sont incluses entre balises <ca>, <tls-auth>…"
+              exit 1
+            fi
             grep -q "auth-user-pass" "$OUT" \
               || echo "::warning::La configuration VPN ne contient pas auth-user-pass."
           else
