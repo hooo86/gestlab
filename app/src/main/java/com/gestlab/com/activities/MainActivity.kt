@@ -706,7 +706,6 @@ class MainActivity : AppCompatActivity() {
               var css = [
                 '.o_main_navbar, header.o_navbar { display: none !important; }',
                 '.o_web_client { padding-top: 0 !important; }',
-                '.o_control_panel { flex-wrap: wrap; }',
                 '.o_list_renderer, .o_list_view { overflow-x: auto; }'
               ].join('\n');
               var s = document.createElement('style');
