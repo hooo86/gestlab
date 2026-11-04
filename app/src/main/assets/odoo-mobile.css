@@ -1,0 +1,161 @@
+/*
+ * Gestlab — affichage mobile d'Odoo (Community 13 à 17).
+ * Injecté par l'application ; ne s'applique qu'aux écrans de téléphone (< 768 px).
+ * Classes « gl-* » : ajoutées par odoo-mobile.js.
+ */
+@media (max-width: 767.98px) {
+
+  /* ---------- Général ---------- */
+  body.o_web_client { font-size: 15px; }
+  .o_web_client .btn { min-height: 38px; }
+  .o_web_client .dropdown-menu { max-width: 100vw; }
+  .o_content { overflow-x: hidden; }
+
+  /* ---------- Barre de commandes (fil d'Ariane, boutons, recherche, pagination) ---------- */
+  .o_control_panel { padding: 8px 10px !important; }
+  .o_control_panel .o_cp_top,
+  .o_control_panel .o_cp_bottom { display: flex; flex-wrap: wrap; gap: 6px; }
+  .o_control_panel .o_cp_top_left,
+  .o_control_panel .o_cp_top_right,
+  .o_control_panel .o_cp_bottom_left,
+  .o_control_panel .o_cp_bottom_right { width: 100% !important; flex: 1 1 100% !important; }
+  .o_control_panel .breadcrumb { font-size: 18px; margin: 0 0 4px; white-space: normal; }
+  .o_control_panel .o_cp_searchview,
+  .o_control_panel .o_searchview { width: 100% !important; }
+  .o_control_panel .o_cp_buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .o_control_panel .o_cp_bottom_right { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .o_control_panel .o_search_options { display: flex; flex-wrap: wrap; gap: 4px; }
+  .o_control_panel .o_cp_switch_buttons { margin-left: auto; }
+  .o_control_panel > div { flex-wrap: wrap; }                 /* Odoo 16-17 */
+
+  /* ---------- Listes principales : une carte par ligne ---------- */
+  table.gl-cards { display: block !important; width: 100% !important; border: 0 !important; background: transparent !important; table-layout: auto !important; }
+  table.gl-cards > thead { display: none !important; }
+  table.gl-cards > tbody,
+  table.gl-cards > tfoot { display: block !important; width: 100% !important; }
+  table.gl-cards tr.o_data_row {
+    display: block !important;
+    margin: 8px 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(0,0,0,.10);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  table.gl-cards tr.o_data_row > td {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 3px 0 !important;
+    border: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    text-align: right;
+    word-break: break-word;
+  }
+  table.gl-cards tr.o_data_row > td.o_data_cell::before {
+    content: attr(data-gl-label);
+    flex: 0 0 42%;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: #6c757d;
+  }
+  table.gl-cards tr.o_data_row > td.gl-title {
+    display: block !important;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 600;
+    padding-bottom: 6px !important;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  }
+  table.gl-cards tr.o_data_row > td.gl-title::before { content: none; }
+  table.gl-cards tr.o_data_row > td.gl-empty,
+  table.gl-cards tr.o_data_row > td.o_list_record_selector,
+  table.gl-cards tr.o_data_row > td.o_handle_cell { display: none !important; }
+  /* Lignes vides de remplissage */
+  table.gl-cards tbody tr:not(.o_data_row):not(.o_group_header):not(.o_add_record_row) { display: none !important; }
+  /* En-têtes de groupe */
+  table.gl-cards tr.o_group_header {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 12px 10px 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.05);
+    font-weight: 600;
+  }
+  table.gl-cards tr.o_group_header > td,
+  table.gl-cards tr.o_group_header > th { display: block !important; border: 0 !important; padding: 0 4px !important; width: auto !important; }
+  table.gl-cards tr.o_group_header > th.o_group_name,
+  table.gl-cards tr.o_group_header > td.o_group_name { flex: 1 1 100%; white-space: normal !important; text-align: left; }
+  table.gl-cards tr.o_group_header > td:empty { display: none !important; }
+  /* Totaux */
+  table.gl-cards > tfoot tr { display: flex !important; flex-wrap: wrap; justify-content: flex-end; gap: 12px; padding: 8px 14px; font-weight: 600; }
+  table.gl-cards > tfoot td { display: block !important; border: 0 !important; padding: 0 !important; }
+  table.gl-cards > tfoot td:empty { display: none !important; }
+  .o_list_view, .o_list_renderer { overflow-x: hidden !important; }
+  .o_list_view .table-responsive, .o_list_renderer .table-responsive { overflow-x: visible !important; }
+
+  /* Listes dans un formulaire (lignes de facture…) : tableau défilant, modifiable */
+  .o_field_x2many .o_list_view,
+  .o_field_x2many .o_list_renderer,
+  .o_field_x2many .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+
+  /* ---------- Formulaires ---------- */
+  .o_form_view .o_form_sheet_bg { padding: 0 !important; }
+  .o_form_view .o_form_sheet {
+    min-width: 0 !important; max-width: 100% !important; width: 100% !important;
+    margin: 0 !important; padding: 12px !important; border: 0 !important; box-shadow: none !important;
+  }
+  .o_form_view .o_group,
+  .o_form_view .o_inner_group,
+  .o_form_view .o_group .o_group { display: block !important; width: 100% !important; margin: 0 !important; }
+  .o_form_view .o_group_col_6,
+  .o_form_view .o_group_col_4,
+  .o_form_view .o_group_col_8,
+  .o_form_view .o_group_col_12 { width: 100% !important; float: none !important; }
+  .o_form_view table.o_inner_group { display: block !important; }
+  .o_form_view table.o_inner_group > tbody { display: block !important; }
+  .o_form_view table.o_inner_group > tbody > tr { display: flex !important; flex-direction: column; margin-bottom: 8px; }
+  .o_form_view table.o_inner_group > tbody > tr > td { display: block !important; width: 100% !important; padding: 0 !important; }
+  .o_form_view .o_inner_group > .o_wrap_field { flex-direction: column; margin-bottom: 8px; }   /* Odoo 16-17 */
+  .o_form_view .o_inner_group > .o_wrap_field > .o_cell { width: 100% !important; }
+  .o_form_view .o_td_label .o_form_label,
+  .o_form_view .o_form_label { font-size: 13px; font-weight: 600; color: #6c757d; margin: 0 0 2px; }
+  .o_form_view .o_field_widget { width: 100% !important; max-width: 100%; }
+  .o_form_view .o_field_widget input,
+  .o_form_view .o_field_widget select,
+  .o_form_view .o_field_widget textarea { font-size: 16px; min-height: 36px; }
+  .o_form_view .oe_title h1 { font-size: 22px; }
+  .o_form_view .oe_button_box { display: flex; flex-wrap: wrap; gap: 4px; float: none !important; margin: 0 0 8px !important; }
+  .o_form_view .oe_button_box .oe_stat_button { flex: 1 1 45%; width: auto !important; }
+  .o_form_view .oe_avatar { float: none !important; margin: 0 0 8px !important; }
+  .o_form_view .o_form_statusbar { flex-wrap: wrap; padding: 6px !important; }
+  .o_form_view .o_statusbar_buttons { display: flex; flex-wrap: wrap; gap: 4px; }
+  .o_form_view .o_statusbar_status { overflow-x: auto; flex-wrap: nowrap !important; max-width: 100%; }
+  .o_form_view .o_notebook .nav-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+  .o_form_view .o_notebook .nav-tabs .nav-link { white-space: nowrap; }
+  /* Discussion (chatter) sous le formulaire */
+  .o_form_view.o_xxl_form_view, .o_form_view .o_form_renderer { flex-direction: column !important; }
+  .o_FormRenderer_chatterContainer, .o-mail-Form-chatter, .o_chatter {
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important; border-left: 0 !important;
+  }
+
+  /* ---------- Kanban ---------- */
+  .o_kanban_view.o_kanban_ungrouped .o_kanban_record { flex: 1 1 100% !important; width: 100% !important; margin: 4px 8px !important; }
+  .o_kanban_view.o_kanban_grouped { scroll-snap-type: x mandatory; }
+  .o_kanban_view.o_kanban_grouped .o_kanban_group { flex: 0 0 88vw !important; width: 88vw !important; scroll-snap-align: start; }
+
+  /* ---------- Fenêtres (popups) en plein écran ---------- */
+  .modal-dialog { margin: 0 !important; max-width: 100% !important; min-height: 100%; }
+  .modal-content { min-height: 100vh; border-radius: 0 !important; }
+  .modal-footer { flex-wrap: wrap; gap: 6px; }
+}

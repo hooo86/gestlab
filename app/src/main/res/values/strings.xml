@@ -43,6 +43,8 @@
     <string name="action_messages">Messages</string>
     <string name="action_activities">Activités</string>
     <string name="menu_preferences">Mes préférences</string>
+    <string name="menu_mobile_on">Affichage mobile : activé</string>
+    <string name="menu_mobile_off">Affichage mobile : désactivé</string>
     <string name="odoo_user">%1$s · Odoo %2$s</string>
     <string name="action_reload">Recharger</string>
 

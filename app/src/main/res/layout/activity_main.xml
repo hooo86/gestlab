@@ -179,6 +179,7 @@
             android:background="?attr/colorOutlineVariant" />
 
         <TextView android:id="@+id/drawer_refresh" style="@style/DrawerAction" android:text="@string/menu_refresh" />
+        <TextView android:id="@+id/drawer_mobile_layout" style="@style/DrawerAction" android:text="@string/menu_mobile_on" />
         <TextView android:id="@+id/drawer_preferences" style="@style/DrawerAction" android:text="@string/menu_preferences" />
         <TextView android:id="@+id/drawer_odoo_logout" style="@style/DrawerAction" android:text="@string/menu_odoo_logout" />
         <TextView android:id="@+id/drawer_vpn_toggle" style="@style/DrawerAction" android:text="@string/menu_vpn_disconnect" />

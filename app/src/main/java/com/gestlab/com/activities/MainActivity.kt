@@ -104,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     private var messagesBadge: com.google.android.material.badge.BadgeDrawable? = null
     private var activitiesBadge: com.google.android.material.badge.BadgeDrawable? = null
     private lateinit var drawerUser: TextView
+    private lateinit var mobileToggle: TextView
     private var connectedAt = 0L
     private var autoRetried = false
 
@@ -367,6 +368,14 @@ class MainActivity : AppCompatActivity() {
             menusLoaded = false
             loadMenus()
         }
+        mobileToggle = findViewById(R.id.drawer_mobile_layout)
+        updateMobileToggle()
+        mobileToggle.setOnClickListener {
+            mobileLayout = !mobileLayout
+            updateMobileToggle()
+            drawer.closeDrawers()
+            web.reload()
+        }
         findViewById<View>(R.id.drawer_preferences).setOnClickListener {
             openOdoo("/web#action=base.action_res_users_my")
         }
@@ -393,6 +402,31 @@ class MainActivity : AppCompatActivity() {
     private fun open(menu: OdooMenu) {
         drawer.closeDrawers()
         web.loadUrl(OdooMenus.urlOf(baseUrl, menu))
+    }
+
+    private val prefs by lazy { getSharedPreferences("display", MODE_PRIVATE) }
+    private var mobileLayout: Boolean
+        get() = prefs.getBoolean("mobile_layout", true)
+        set(value) { prefs.edit().putBoolean("mobile_layout", value).apply() }
+
+    /** Script de l'affichage mobile (assets/odoo-mobile.css + odoo-mobile.js), lu une fois. */
+    private val mobileScript: String by lazy {
+        try {
+            val css = assets.open("odoo-mobile.css").bufferedReader().use { it.readText() }
+            val js = assets.open("odoo-mobile.js").bufferedReader().use { it.readText() }
+            "window.__GL_CSS=" + JSONObject.quote(css) + ";\n" + js
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    private fun injectStyles(view: WebView) {
+        view.evaluateJavascript(ODOO_STYLE_JS, null)
+        if (mobileLayout && mobileScript.isNotEmpty()) view.evaluateJavascript(mobileScript, null)
+    }
+
+    private fun updateMobileToggle() {
+        mobileToggle.setText(if (mobileLayout) R.string.menu_mobile_on else R.string.menu_mobile_off)
     }
 
     private fun openOdoo(path: String) {
@@ -528,7 +562,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPageCommitVisible(view: WebView, url: String) {
-                view.evaluateJavascript(ODOO_STYLE_JS, null)
+                injectStyles(view)
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -538,7 +572,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 pageProgress.visibility = View.GONE
                 view.evaluateJavascript(DOWNLOAD_HOOK_JS, null)
-                view.evaluateJavascript(ODOO_STYLE_JS, null)
+                injectStyles(view)
                 val path = Uri.parse(url).path.orEmpty()
                 if (path.startsWith("/web/login") || path.startsWith("/web/database")) {
                     menusLoaded = false
