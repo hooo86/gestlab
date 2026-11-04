@@ -28,9 +28,16 @@
     transition: none !important;
   }
   .o_control_panel.gl-wrap,
-  .o_control_panel .gl-wrap { flex-wrap: wrap !important; row-gap: 6px; }
+  .o_control_panel .gl-wrap { flex-wrap: wrap !important; row-gap: 6px; column-gap: 4px; }
+  /* Taille naturelle (pas d'écrasement ni de chevauchement) : on passe à la ligne à la place. */
   .o_control_panel.gl-wrap > *,
-  .o_control_panel .gl-wrap > * { min-width: 0; max-width: 100%; }
+  .o_control_panel .gl-wrap > * { flex-shrink: 0 !important; max-width: 100%; }
+  /* Pagination : compteur puis flèches ‹ › côte à côte, dans le bon ordre. */
+  .o_control_panel .o_pager,
+  .o_control_panel .o_cp_pager .o_pager { display: inline-flex !important; flex-direction: row !important; align-items: center; flex-wrap: nowrap !important; gap: 4px; }
+  .o_control_panel .o_pager .btn-group,
+  .o_control_panel .o_pager_previous ~ .o_pager_next { flex-direction: row !important; }
+  .o_control_panel .o_pager_counter { white-space: nowrap; }
 
   /* ---------- Listes principales : une carte par ligne ---------- */
   table.gl-cards { display: block !important; width: 100% !important; border: 0 !important; background: transparent !important; table-layout: auto !important; }
