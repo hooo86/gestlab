@@ -117,7 +117,21 @@ class VpnController(context: Context) : VpnStatus.StateListener, VpnStatus.LogLi
         VpnStatus.logInfo("Gestlab : démarrage du service VPN (${profile.mConnections.firstOrNull()?.mServerName ?: "?"})")
         // Enregistré chiffré dans le stockage privé de l'application.
         ProfileManager.setTemporaryProfile(appContext, profile)
-        VPNLaunchHelper.startOpenVpn(profile, appContext, "gestlab", true)
+        try {
+            VPNLaunchHelper.startOpenVpn(profile, appContext, "gestlab", true)
+        } catch (e: Exception) {
+            VpnStatus.logError("Gestlab : Android a refusé le démarrage du service VPN : $e")
+            return
+        }
+        // Diagnostic : le processus du moteur VPN a-t-il bien démarré ?
+        main.postDelayed({
+            val am = appContext.getSystemService(android.app.ActivityManager::class.java)
+            val running = am?.runningAppProcesses?.any { it.processName == appContext.packageName + ":openvpn" } == true
+            VpnStatus.logInfo(
+                if (running) "Gestlab : processus VPN actif"
+                else "Gestlab : processus VPN ABSENT — démarrage bloqué par le téléphone (batterie / démarrage automatique)"
+            )
+        }, 4000)
     }
 
     fun stop() {
