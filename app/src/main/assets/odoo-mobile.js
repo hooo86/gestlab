@@ -78,10 +78,76 @@
     }
   }
 
+  /*
+   * Correction automatique des débordements à gauche : un élément qui commence avant
+   * le bord de l'écran est poussé par l'un de ses conteneurs (marge négative, décalage,
+   * sens inversé…). On remonte jusqu'au conteneur fautif et on annule ce décalage.
+   * Les zones qu'Odoo fait volontairement glisser (kanban, tableaux défilants) sont ignorées.
+   */
+  window.__glFixes = window.__glFixes || [];
+  var SKIP = '.o_kanban_view, .o_kanban_mobile_tabs_container, .dropdown-menu, .modal, .o_field_x2many, .ribbon, .o_widget_web_ribbon';
+
+  function describe(el) {
+    var c = (typeof el.className === 'string' ? el.className : '').trim().split(/\s+/).slice(0, 3).join('.');
+    return el.tagName.toLowerCase() + (c ? '.' + c : '');
+  }
+
+  function scrollsX(el) {
+    var o = getComputedStyle(el).overflowX;
+    return (o === 'auto' || o === 'scroll') && el.scrollWidth > el.clientWidth + 2;
+  }
+
+  function fixElement(el, root) {
+    var culprit = null;
+    for (var p = el; p && p !== root; p = p.parentElement) {
+      if (p.getBoundingClientRect().left < -2) culprit = p; else break;
+      if (p.parentElement && scrollsX(p.parentElement)) return;     // décalage dû au défilement
+    }
+    if (!culprit) return;
+    var live = getComputedStyle(culprit), fixed = [];
+    var cs = { marginLeft: live.marginLeft, marginRight: live.marginRight, position: live.position, left: live.left,
+               transform: live.transform, flexDirection: live.flexDirection, direction: live.direction };
+    if (parseFloat(cs.marginLeft) < 0) { culprit.style.setProperty('margin-left', '0', 'important'); fixed.push('ml ' + cs.marginLeft); }
+    if (parseFloat(cs.marginRight) < 0) { culprit.style.setProperty('margin-right', '0', 'important'); fixed.push('mr ' + cs.marginRight); }
+    if (cs.position !== 'static' && parseFloat(cs.left) < 0) { culprit.style.setProperty('left', '0', 'important'); fixed.push('left ' + cs.left); }
+    if (cs.transform && cs.transform !== 'none') { culprit.style.setProperty('transform', 'none', 'important'); fixed.push('transform'); }
+    if (cs.flexDirection === 'row-reverse') { culprit.style.setProperty('flex-direction', 'row', 'important'); fixed.push('row-reverse'); }
+    if (cs.direction === 'rtl') { culprit.style.setProperty('direction', 'ltr', 'important'); fixed.push('rtl'); }
+    // Toujours trop large : on le contraint à la largeur de l'écran.
+    if (!fixed.length || culprit.getBoundingClientRect().left < -2) {
+      culprit.style.setProperty('max-width', '100%', 'important');
+      culprit.style.setProperty('margin-left', '0', 'important');
+      var parent = culprit.parentElement;
+      if (parent) {
+        var pcs = getComputedStyle(parent);
+        if (pcs.display.indexOf('flex') >= 0) {
+          parent.style.setProperty('flex-wrap', 'wrap', 'important');
+          if (/end|right|center/.test(pcs.justifyContent)) parent.style.setProperty('justify-content', 'flex-start', 'important');
+          if (pcs.flexDirection === 'row-reverse') parent.style.setProperty('flex-direction', 'row', 'important');
+          fixed.push('parent flex ' + pcs.flexDirection + ' ' + pcs.justifyContent);
+        }
+      }
+    }
+    if (window.__glFixes.length < 30) window.__glFixes.push(describe(culprit) + ' ← ' + (fixed.join(', ') || 'contraint'));
+  }
+
+  function fixLeftOverflow() {
+    var root = document.querySelector('.o_action_manager') || document.body;
+    var nodes = root.querySelectorAll('.o_control_panel *, .o_form_statusbar *, .oe_button_box *, .o_form_view .o_form_sheet_bg > *');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.closest(SKIP)) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width === 0 || r.left >= -2) continue;
+      fixElement(el, root);
+    }
+  }
+
   var pending = false;
   function run() {
     pending = false;
     if (window.innerWidth >= 768) return;
+    try { fixLeftOverflow(); } catch (e) {}
     var cps = document.querySelectorAll('.o_control_panel');
     for (var k = 0; k < cps.length; k++) {
       try { processControlPanel(cps[k]); } catch (e) {}

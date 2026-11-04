@@ -774,6 +774,7 @@ class MainActivity : AppCompatActivity() {
               var out = ['vw=' + window.innerWidth + ' dpr=' + window.devicePixelRatio + ' scrollX=' + window.scrollX +
                          ' docW=' + document.documentElement.scrollWidth + ' ua=' + navigator.userAgent.slice(0, 60)];
               var b = document.body; out.push('body.class=' + (b && b.className));
+              out.push('corrections=' + JSON.stringify(window.__glFixes || []));
               var cp = document.querySelector('.o_control_panel');
               if (!cp) return out.concat(['(pas de .o_control_panel)']).join('\n');
               function walk(el, depth) {
