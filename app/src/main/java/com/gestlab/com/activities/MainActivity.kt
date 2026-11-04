@@ -376,6 +376,19 @@ class MainActivity : AppCompatActivity() {
             drawer.closeDrawers()
             web.reload()
         }
+        findViewById<View>(R.id.drawer_layout_diag).setOnClickListener {
+            drawer.closeDrawers()
+            web.evaluateJavascript(LAYOUT_DIAG_JS) { result ->
+                val text = try {
+                    org.json.JSONTokener(result).nextValue() as? String ?: result
+                } catch (e: Exception) {
+                    result
+                }
+                val cm = getSystemService(android.content.ClipboardManager::class.java)
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Diagnostic affichage", text))
+                Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_LONG).show()
+            }
+        }
         findViewById<View>(R.id.drawer_preferences).setOnClickListener {
             openOdoo("/web#action=base.action_res_users_my")
         }
@@ -696,6 +709,38 @@ class MainActivity : AppCompatActivity() {
     """.trimIndent()
 
     private companion object {
+        /**
+         * Diagnostic d'affichage : structure et styles calculés de la barre de commandes
+         * Odoo (positions, display, marges…), sans le texte des enregistrements.
+         */
+        val LAYOUT_DIAG_JS = """
+            (function(){
+              var out = ['vw=' + window.innerWidth + ' dpr=' + window.devicePixelRatio + ' scrollX=' + window.scrollX +
+                         ' docW=' + document.documentElement.scrollWidth + ' ua=' + navigator.userAgent.slice(0, 60)];
+              var b = document.body; out.push('body.class=' + (b && b.className));
+              var cp = document.querySelector('.o_control_panel');
+              if (!cp) return out.concat(['(pas de .o_control_panel)']).join('\n');
+              function walk(el, depth) {
+                if (depth > 6 || out.length > 120) return;
+                var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+                var cls = (typeof el.className === 'string' ? el.className : '').trim().replace(/\s+/g, '.');
+                out.push(Array(depth + 1).join('  ') + el.tagName.toLowerCase() + (cls ? '.' + cls : '') +
+                  ' | x=' + Math.round(r.left) + ' w=' + Math.round(r.width) + ' h=' + Math.round(r.height) +
+                  ' | ' + cs.display + ' ' + cs.position + (cs.display.indexOf('flex') >= 0 ? ' dir=' + cs.flexDirection + ' wrap=' + cs.flexWrap + ' jc=' + cs.justifyContent : '') +
+                  ' ml=' + cs.marginLeft + ' mr=' + cs.marginRight + ' pl=' + cs.paddingLeft +
+                  (cs.transform !== 'none' ? ' tf=' + cs.transform : '') + (cs.float !== 'none' ? ' float=' + cs.float : '') +
+                  (cs.left !== 'auto' ? ' left=' + cs.left : '') + ' minW=' + cs.minWidth);
+                for (var i = 0; i < el.children.length; i++) {
+                  var c = el.children[i];
+                  if (c.matches('.dropdown-menu, svg, i, .o_dropdown_kanban, script')) continue;
+                  walk(c, depth + 1);
+                }
+              }
+              walk(cp, 0);
+              return out.join('\n');
+            })();
+        """.trimIndent()
+
         /**
          * Masque la barre de menu d'Odoo (le menu natif ☰ de l'application la remplace)
          * et resserre l'affichage sur téléphone. Compatible Odoo 13 à 18.
