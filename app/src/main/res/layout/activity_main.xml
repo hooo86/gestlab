@@ -140,6 +140,15 @@
                 android:textColor="@color/on_bar" />
 
             <TextView
+                android:id="@+id/drawer_user"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@color/on_bar"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/drawer_vpn_state"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -170,6 +179,7 @@
             android:background="?attr/colorOutlineVariant" />
 
         <TextView android:id="@+id/drawer_refresh" style="@style/DrawerAction" android:text="@string/menu_refresh" />
+        <TextView android:id="@+id/drawer_preferences" style="@style/DrawerAction" android:text="@string/menu_preferences" />
         <TextView android:id="@+id/drawer_odoo_logout" style="@style/DrawerAction" android:text="@string/menu_odoo_logout" />
         <TextView android:id="@+id/drawer_vpn_toggle" style="@style/DrawerAction" android:text="@string/menu_vpn_disconnect" />
         <TextView android:id="@+id/drawer_forget" style="@style/DrawerAction" android:text="@string/menu_forget" />

@@ -99,6 +99,11 @@ class MainActivity : AppCompatActivity() {
     private var odooLoaded = false
     private var menusLoaded = false
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var odooSession: com.gestlab.com.OdooSession? = null
+    private var lastCountersAt = 0L
+    private var messagesBadge: com.google.android.material.badge.BadgeDrawable? = null
+    private var activitiesBadge: com.google.android.material.badge.BadgeDrawable? = null
+    private lateinit var drawerUser: TextView
     private var connectedAt = 0L
     private var autoRetried = false
 
@@ -141,6 +146,7 @@ class MainActivity : AppCompatActivity() {
         vpn = VpnController(this)
 
         bindViews()
+        setupBadges()
         setupDrawer()
         setupWebView()
         setupBack()
@@ -148,6 +154,11 @@ class MainActivity : AppCompatActivity() {
         vpn.attach(::onVpnState, ::onVpnLog)
         requestNotificationPermission()
         connect()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshCounters()
     }
 
     override fun onPause() {
@@ -312,6 +323,7 @@ class MainActivity : AppCompatActivity() {
         vpnState = findViewById(R.id.drawer_vpn_state)
         vpnToggle = findViewById(R.id.drawer_vpn_toggle)
         menuHint = findViewById(R.id.drawer_menu_hint)
+        drawerUser = findViewById(R.id.drawer_user)
 
         statusRetry.setOnClickListener {
             if (odooLoaded && vpn.level == ConnectionStatus.LEVEL_CONNECTED) {
@@ -328,6 +340,8 @@ class MainActivity : AppCompatActivity() {
         toolbar.inflateMenu(R.menu.toolbar)
         toolbar.setOnMenuItemClickListener {
             when (it.itemId) {
+                R.id.action_messages -> openOdoo("/web#action=mail.action_discuss")
+                R.id.action_activities -> openOdoo("/web#action=mail.mail_activity_action")
                 R.id.action_reload -> web.reload()
                 R.id.action_home -> web.loadUrl("$baseUrl/web")
             }
@@ -352,6 +366,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.drawer_refresh).setOnClickListener {
             menusLoaded = false
             loadMenus()
+        }
+        findViewById<View>(R.id.drawer_preferences).setOnClickListener {
+            openOdoo("/web#action=base.action_res_users_my")
         }
         findViewById<View>(R.id.drawer_odoo_logout).setOnClickListener {
             drawer.closeDrawers()
@@ -378,19 +395,87 @@ class MainActivity : AppCompatActivity() {
         web.loadUrl(OdooMenus.urlOf(baseUrl, menu))
     }
 
+    private fun openOdoo(path: String) {
+        drawer.closeDrawers()
+        web.loadUrl(baseUrl + path)
+        refreshCounters(force = true)
+    }
+
+    @androidx.annotation.OptIn(markerClass = [com.google.android.material.badge.ExperimentalBadgeUtils::class])
+    private fun setupBadges() {
+        messagesBadge = com.google.android.material.badge.BadgeDrawable.create(this).apply {
+            isVisible = false
+            maxCharacterCount = 3
+        }
+        activitiesBadge = com.google.android.material.badge.BadgeDrawable.create(this).apply {
+            isVisible = false
+            maxCharacterCount = 3
+        }
+        com.google.android.material.badge.BadgeUtils.attachBadgeDrawable(messagesBadge!!, toolbar, R.id.action_messages)
+        com.google.android.material.badge.BadgeUtils.attachBadgeDrawable(activitiesBadge!!, toolbar, R.id.action_activities)
+    }
+
+    private fun showCount(badge: com.google.android.material.badge.BadgeDrawable?, count: Int?) {
+        badge ?: return
+        if (count != null && count > 0) {
+            badge.number = count
+            badge.isVisible = true
+        } else {
+            badge.isVisible = false
+        }
+    }
+
+    /** Met à jour les pastilles Messages / Activités (au plus toutes les 30 s, sauf si forcé). */
+    private fun refreshCounters(force: Boolean = false) {
+        val session = odooSession ?: return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && now - lastCountersAt < 30_000) return
+        lastCountersAt = now
+        lifecycleScope.launch {
+            try {
+                val c = OdooMenus.counters(baseUrl, CookieManager.getInstance().getCookie(baseUrl), session)
+                showCount(messagesBadge, c.messages)
+                showCount(activitiesBadge, c.activities)
+            } catch (e: OdooSessionExpired) {
+                odooSession = null
+                showCount(messagesBadge, null)
+                showCount(activitiesBadge, null)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun loadMenus() {
-        if (menusLoaded) return
+        if (menusLoaded) {
+            refreshCounters()
+            return
+        }
         menusLoaded = true
         menuHint.setText(R.string.menu_loading)
         menuHint.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
-                val apps = OdooMenus.load(baseUrl, CookieManager.getInstance().getCookie(baseUrl))
+                val cookie = CookieManager.getInstance().getCookie(baseUrl)
+                val session = try {
+                    OdooMenus.session(baseUrl, cookie)
+                } catch (e: OdooSessionExpired) {
+                    throw e
+                } catch (e: Exception) {
+                    null
+                }
+                odooSession = session
+                if (session != null) {
+                    drawerUser.text = getString(R.string.odoo_user, session.name, session.version)
+                    drawerUser.visibility = View.VISIBLE
+                    refreshCounters(force = true)
+                }
+                val apps = OdooMenus.load(baseUrl, cookie, session)
                 menuAdapter.submit(apps)
                 menuHint.visibility = if (apps.isEmpty()) View.VISIBLE else View.GONE
                 if (apps.isEmpty()) menuHint.setText(R.string.menu_empty)
             } catch (e: OdooSessionExpired) {
                 menusLoaded = false
+                odooSession = null
                 menuAdapter.submit(emptyList())
                 menuHint.setText(R.string.menu_login_first)
             } catch (e: Exception) {

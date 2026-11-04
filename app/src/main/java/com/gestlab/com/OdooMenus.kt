@@ -21,6 +21,12 @@ data class MenuEntry(val menu: OdooMenu, val depth: Int, val isSection: Boolean)
 
 class OdooSessionExpired : IOException("Session Odoo expirée")
 
+/** Utilisateur connecté à Odoo : identifiant, nom, version du serveur et contexte (langue…). */
+data class OdooSession(val uid: Int, val name: String, val version: String, val context: JSONObject?)
+
+/** Compteurs de la barre : messages à traiter (boîte de réception) et activités à faire. */
+data class OdooCounters(val messages: Int?, val activities: Int?)
+
 /**
  * Lit les menus Odoo autorisés pour l'utilisateur connecté (ir.ui.menu.load_menus) :
  * Odoo ne renvoie que les menus permis par ses groupes et droits d'accès, le menu
@@ -28,29 +34,67 @@ class OdooSessionExpired : IOException("Session Odoo expirée")
  */
 object OdooMenus {
 
-    suspend fun load(baseUrl: String, cookie: String?): List<OdooMenu> = withContext(Dispatchers.IO) {
-        // Contexte de l'utilisateur (langue du compte, fuseau…) : sans lui, certaines
-        // versions d'Odoo renvoient les menus en anglais.
-        val userContext = try {
-            rpc(baseUrl, cookie, "/web/session/get_session_info", JSONObject())
-                .let { it as? JSONObject }?.optJSONObject("user_context")
-        } catch (e: OdooSessionExpired) {
-            throw e
-        } catch (e: Exception) {
-            null
-        }
-        val kwargs = JSONObject()
-        if (userContext != null) kwargs.put("context", userContext)
-        val result = rpc(
-            baseUrl, cookie, "/web/dataset/call_kw/ir.ui.menu/load_menus",
-            JSONObject()
-                .put("model", "ir.ui.menu")
-                .put("method", "load_menus")
-                .put("args", JSONArray().put(false))
-                .put("kwargs", kwargs)
+    suspend fun session(baseUrl: String, cookie: String?): OdooSession = withContext(Dispatchers.IO) {
+        val info = rpc(baseUrl, cookie, "/web/session/get_session_info", JSONObject()) as? JSONObject
+            ?: throw IOException("Réponse Odoo inattendue")
+        val uid = info.opt("uid")
+        if (uid !is Number) throw OdooSessionExpired()
+        OdooSession(
+            uid = uid.toInt(),
+            name = info.optString("name").ifEmpty { info.optString("username") },
+            version = info.optString("server_version"),
+            // Contexte de l'utilisateur (langue du compte, fuseau…) : sans lui, certaines
+            // versions d'Odoo renvoient les menus en anglais.
+            context = info.optJSONObject("user_context"),
         )
-        parse(result as JSONObject)
     }
+
+    suspend fun load(baseUrl: String, cookie: String?, session: OdooSession?): List<OdooMenu> =
+        withContext(Dispatchers.IO) {
+            val kwargs = JSONObject()
+            session?.context?.let { kwargs.put("context", it) }
+            val result = rpc(
+                baseUrl, cookie, "/web/dataset/call_kw/ir.ui.menu/load_menus",
+                JSONObject()
+                    .put("model", "ir.ui.menu")
+                    .put("method", "load_menus")
+                    .put("args", JSONArray().put(false))
+                    .put("kwargs", kwargs)
+            )
+            parse(result as JSONObject)
+        }
+
+    /** Compteurs ; une valeur nulle si le module correspondant est absent ou en erreur. */
+    suspend fun counters(baseUrl: String, cookie: String?, session: OdooSession): OdooCounters =
+        withContext(Dispatchers.IO) {
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(java.util.Date())
+            fun count(model: String, domain: JSONArray): Int? = try {
+                val kwargs = JSONObject()
+                session.context?.let { kwargs.put("context", it) }
+                (rpc(
+                    baseUrl, cookie, "/web/dataset/call_kw/$model/search_count",
+                    JSONObject()
+                        .put("model", model)
+                        .put("method", "search_count")
+                        .put("args", JSONArray().put(domain))
+                        .put("kwargs", kwargs)
+                ) as? Number)?.toInt()
+            } catch (e: OdooSessionExpired) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            OdooCounters(
+                // Messages qui demandent une action de l'utilisateur (boîte de réception Odoo).
+                messages = count("mail.message", JSONArray().put(JSONArray().put("needaction").put("=").put(true))),
+                // Activités en retard ou du jour, assignées à l'utilisateur.
+                activities = count(
+                    "mail.activity", JSONArray()
+                        .put(JSONArray().put("user_id").put("=").put(session.uid))
+                        .put(JSONArray().put("date_deadline").put("<=").put(today))
+                ),
+            )
+        }
 
     /** Appel JSON-RPC à Odoo avec le cookie de session de la WebView ; renvoie « result ». */
     private fun rpc(baseUrl: String, cookie: String?, path: String, params: JSONObject): Any? {

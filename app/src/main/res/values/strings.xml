@@ -40,6 +40,10 @@
     <string name="credentials_forgotten">Identifiants VPN effacés</string>
 
     <string name="action_home">Accueil</string>
+    <string name="action_messages">Messages</string>
+    <string name="action_activities">Activités</string>
+    <string name="menu_preferences">Mes préférences</string>
+    <string name="odoo_user">%1$s · Odoo %2$s</string>
     <string name="action_reload">Recharger</string>
 
     <string name="download_started">Téléchargement…</string>
